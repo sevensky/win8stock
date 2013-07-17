@@ -12,41 +12,113 @@ namespace ConsoleDemo
 {
     class Program
     {
-        static void Main(string[] args)
+        static void GetStockByExchangeUseSearch()
         {
             foreach (MaasOne.Finance.YahooFinance.Support.StockExchange ex in MaasOne.Finance.YahooFinance.Support.WorldMarket.DefaultStockExchanges)
             {
-                MaasOne.Finance.YahooFinance.IDSearchDownload dl = new MaasOne.Finance.YahooFinance.IDSearchDownload();
-                Response<IDSearchResult> resp = dl.Download("bas.de");
-                Console.WriteLine(ex.ID + ":" + ex.Name + ":");
+                MaasOne.Finance.YahooFinance.IDSearchDownload sd = new MaasOne.Finance.YahooFinance.IDSearchDownload();
+                if (string.IsNullOrEmpty(ex.Suffix))
+                    continue;
 
-                if (resp.Connection.State == ConnectionState.Success && resp.Result.Items.Length > 0)
+                int iIndex = 0;
+                while (true)
                 {
-                    IDSearchData _s = resp.Result.Items[0];
+                    MaasOne.Finance.YahooFinance.IDQuerySearchDownloadSettings ss = new MaasOne.Finance.YahooFinance.IDQuerySearchDownloadSettings();
+                    ss.Query = ex.Suffix;
+                    ss.Type = SecurityType.Stock;
+                    ss.ResultsIndex = 1020;
+                    Response<MaasOne.Finance.YahooFinance.IDSearchResult> sr = sd.Download(ss);
 
-                    MaasOne.Finance.YahooFinance.Support.YID id = new MaasOne.Finance.YahooFinance.Support.YID(_s);
-
-                    MaasOne.Finance.IID iid = id;
-
-                    string name = id.Name;
-                    string idString = id.ID;
-                    string baseID = id.BaseID;
-                    string suffix = id.Suffix;
-                    MaasOne.Finance.YahooFinance.SecurityType type = id.Type;
-
-                    MaasOne.Finance.YahooFinance.Support.StockExchange stockExchange = id.StockExchange;
-                    if (stockExchange != null)
+                    foreach (IDSearchData sdd in sr.Result.Items)
                     {
-                        string excIdString = id.StockExchange.ID;
-                        string excName = id.StockExchange.Name;
-                        string excSuffix = id.StockExchange.Suffix;
-                        MaasOne.Finance.YahooFinance.Support.CountryInfo country = id.StockExchange.Country;
-                        //                        YahooManaged.Finance.Currency currency = id.StockExchange.Currency;
-                        //                        bool isActiveNow = id.StockExchange.IsActiveLocal(System.DateTime.Now);
+                        Console.WriteLine(sdd.ID + "\t" + sdd.Name);
+                    }
+
+                    if (sr.Result.Items.Length < 1)
+                        break;
+
+                    iIndex += sr.Result.Items.Length;
+
+                    Console.WriteLine("new index:" + iIndex);
+                }
+
+                Console.WriteLine("");
+            }
+        }
+
+        static void GetStockByExchange()
+        {
+            AlphabeticIDIndexDownload dl1 = new AlphabeticIDIndexDownload();
+            dl1.Settings.TopIndex = null;
+            Response<AlphabeticIDIndexResult> resp1 = dl1.Download();
+
+            Console.WriteLine("Id|Isin|Name|Exchange|Type|Industry");
+
+            foreach (var alphabeticalIndex in resp1.Result.Items)
+            {
+                AlphabeticalTopIndex topIndex = (AlphabeticalTopIndex)alphabeticalIndex;
+                dl1.Settings.TopIndex = topIndex;
+                Response<AlphabeticIDIndexResult> resp2 = dl1.Download();
+
+                foreach (var index in resp2.Result.Items)
+                {
+                    IDSearchDownload dl2 = new IDSearchDownload();
+                    Response<IDSearchResult> resp3 = dl2.Download(index);
+
+
+                    int i = 0;
+                    foreach (var item in resp3.Result.Items)
+                    {
+                        Console.WriteLine(item.ID + "|" + item.ISIN + "|" + item.Name + "|" + item.Exchange + "|" + item.Type + "|" + item.Industry);
                     }
 
                 }
             }
+            return;
+            foreach (MaasOne.Finance.YahooFinance.Support.StockExchange ex in MaasOne.Finance.YahooFinance.Support.WorldMarket.DefaultStockExchanges)
+            {
+                MaasOne.Finance.YahooFinance.CompanyInfoDownloadSettings cs = new MaasOne.Finance.YahooFinance.CompanyInfoDownloadSettings();
+                MaasOne.Finance.YahooFinance.CompanyInfoDownload cd = new MaasOne.Finance.YahooFinance.CompanyInfoDownload();
+                cd.Download("yhoo");
+
+                Console.WriteLine("");
+            }
+        }
+        static void Main(string[] args)
+        {
+            GetStockByExchange();
+            /*
+            MaasOne.Finance.YahooFinance.MarketDownload dl = new MaasOne.Finance.YahooFinance.MarketDownload();
+
+            SectorResponse resp = dl.DownloadAllSectors();
+            int iCount = 0;
+
+            //Response/Result
+            if (resp.Connection.State == ConnectionState.Success)
+            {
+                foreach (SectorData d in resp.Result.Items)
+                {
+                    MaasOne.Finance.YahooFinance.Sector sectorID = d.ID;
+                    string sectorName = d.Name;
+                    List<MaasOne.Finance.YahooFinance.IndustryData> industries = d.Industries;
+                    int industryCount = industries.Count;
+
+                    //Download Industries
+                    MaasOne.Finance.YahooFinance.IndustryResponse respIndustries = dl.DownloadIndustries(industries);
+                    foreach (IndustryData industry in respIndustries.Result.Items)
+                    {
+                        Console.WriteLine("Industry Name:"+industry.Name);
+                        foreach (CompanyInfoData com in industry.Companies)
+                        {
+                            Console.Write(com.Name + ":");
+                        }
+                        iCount += industry.Companies.Count;
+                    }
+                    Console.WriteLine("\n======================="+iCount+"===============");
+                }
+            }*/
+
+            
             return;
             /*
             MaasOne.Finance.YahooScreener.Criterias.PriceGainerLosersCriteria priceGainLoss = new MaasOne.Finance.YahooScreener.Criterias.PriceGainerLosersCriteria();
